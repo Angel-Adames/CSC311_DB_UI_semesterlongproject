@@ -10,6 +10,8 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.util.Objects;
+
 public class MainApplication extends Application {
 
     private static Scene scene;
@@ -23,7 +25,7 @@ public class MainApplication extends Application {
     }
 
     public void start(Stage primaryStage) {
-        Image icon = new Image(getClass().getResourceAsStream("/images/DollarClouddatabase.png"));
+        Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/DollarClouddatabase.png")));
         this.primaryStage = primaryStage;
         this.primaryStage.setResizable(false);
         primaryStage.getIcons().add(icon);
@@ -33,9 +35,9 @@ public class MainApplication extends Application {
 
     private void showScene1() {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/splashscreen.fxml"));
+            Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/splashscreen.fxml")));
             Scene scene = new Scene(root, 900, 600);
-            scene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
+            scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/lightTheme.css")).toExternalForm());
             primaryStage.setScene(scene);
             primaryStage.show();
             changeScene();
@@ -46,10 +48,10 @@ public class MainApplication extends Application {
 
     public void changeScene() {
         try {
-            Parent newRoot = FXMLLoader.load(getClass().getResource("/view/login.fxml").toURI().toURL());
+            Parent newRoot = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/login.fxml")).toURI().toURL());
             Scene currentScene = primaryStage.getScene();
             Parent currentRoot = currentScene.getRoot();
-            currentScene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
+            currentScene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/lightTheme.css")).toExternalForm());
             FadeTransition fadeOut = new FadeTransition(Duration.seconds(3), currentRoot);
             fadeOut.setFromValue(1);
             fadeOut.setToValue(0);

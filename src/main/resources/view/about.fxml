@@ -2,20 +2,45 @@
 
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.effect.Light.Distant?>
+<?import javafx.scene.effect.Lighting?>
+<?import javafx.scene.effect.Shadow?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: SLATEGREY;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <TextArea layoutX="6.0" layoutY="51.0" prefHeight="343.0" prefWidth="584.0" text="Your text goes here " wrapText="true">
+      <TextArea layoutX="6.0" layoutY="51.0" prefHeight="343.0" prefWidth="584.0" style="-fx-background-color: GREY; -fx-border-color: DARKSLATEGREY; -fx-border-width: 3; -fx-border-radius: 5;" text="     This project is based upon fixing the UI for the program, adding more features and debugging issues regarding buttons, menu buttons, and making sure the data is added unto the database, and the application runs smoothly and looks professional. - Based on CSC 311 Module 7 Assignment by the Professor Moaath Alrajab" wrapText="true">
          <font>
-            <Font name="System Bold" size="16.0" />
+            <Font name="System Italic" size="16.0" />
          </font>
       </TextArea>
-      <Label alignment="TOP_LEFT" layoutX="8.0" layoutY="11.0" prefHeight="44.0" prefWidth="542.0" text="Developer: MM mM">
+      <Label alignment="TOP_LEFT" layoutX="8.0" layoutY="11.0" prefHeight="44.0" prefWidth="542.0" text="Developer: Yohangel Adames" textAlignment="CENTER">
          <font>
-            <Font name="System Bold" size="26.0" />
+            <Font name="System Bold Italic" size="26.0" />
          </font>
       </Label>
+      <ImageView fitHeight="45.0" fitWidth="45.0" layoutX="552.0" layoutY="2.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../../../../../../Downloads/red%3F.png" />
+         </image>
+         <effect>
+            <Lighting>
+               <bumpInput>
+                  <Shadow />
+               </bumpInput>
+               <light>
+                  <Light.Distant>
+                     <color>
+                        <Color red="0.6973684430122375" green="0.6973684430122375" blue="0.6973684430122375" />
+                     </color>
+                  </Light.Distant>
+               </light>
+            </Lighting>
+         </effect>
+      </ImageView>
    </children>
 </AnchorPane>
