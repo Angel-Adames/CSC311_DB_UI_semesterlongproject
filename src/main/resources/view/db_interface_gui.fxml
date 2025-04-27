@@ -18,7 +18,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="920.0" styleClass="anchor_pane" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="viewmodel.DB_GUI_Controller">
+<AnchorPane fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="904.0" styleClass="anchor_pane" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="viewmodel.DB_GUI_Controller">
     <children>
         <BorderPane fx:id="borderPane" layoutX="-2.0" layoutY="-3.0" prefHeight="597.0" prefWidth="908.0">
             <top>
@@ -26,7 +26,7 @@
                     <menus>
                         <Menu mnemonicParsing="false" styleClass="menu_options" text="File">
                             <items>
-                                <MenuItem fx:id="newItem" mnemonicParsing="false" onAction="#addRecord" styleClass="menu_items" text="New" />
+                                <MenuItem fx:id="addItem" mnemonicParsing="false" onAction="#addRecord" styleClass="menu_items" text="Add" />
                                 <MenuItem fx:id="ChangePic" mnemonicParsing="false" onAction="#showImage" styleClass="menu_items" text="Change Picture" />
                                 <MenuItem fx:id="logOut" mnemonicParsing="false" onAction="#logOut" styleClass="menu_items" text="Log Out" />
                                 <MenuItem mnemonicParsing="false" onAction="#closeApplication" styleClass="menu_items" text="Exit Program" />
@@ -38,11 +38,11 @@
                         <MenuItem fx:id="deleteItem" mnemonicParsing="true" styleClass="menu_items" text="Delete        Ctrl+D" />
                         <MenuItem fx:id="ClearItem" mnemonicParsing="false" styleClass="menu_items" text="Clear        Ctrl+R" />
                         <MenuItem fx:id="CopyItem" mnemonicParsing="false" styleClass="menu_items" text="Copy       Ctrl+C" />
+                        <MenuItem fx:id="pasteItem" mnemonicParsing="false" styleClass="menu_items" text="Paste       Ctrl+P" />
                      </items>
                   </Menu>
                         <Menu mnemonicParsing="false" styleClass="menu_options" text="Help">
                             <items>
-                                <MenuItem mnemonicParsing="false" onAction="#displayAbout" styleClass="menu_items" text="Help" />
                         <MenuItem mnemonicParsing="false" onAction="#displayAbout" styleClass="menu_items" text="About" />
                             </items>
                         </Menu>
@@ -71,17 +71,17 @@
                 </VBox>
             </left>
             <bottom>
-                <HBox prefHeight="30.0" prefWidth="892.0" styleClass="admin_section" BorderPane.alignment="CENTER">
+                <HBox alignment="CENTER" prefHeight="30.0" prefWidth="892.0" styleClass="admin_section" BorderPane.alignment="CENTER">
                <children>
-                  <Label fx:id="statusLb" alignment="CENTER" contentDisplay="CENTER" style="-fx-alignment: CENTER;" text="Status Label" textAlignment="CENTER">
+                  <Label fx:id="statusLb" alignment="CENTER" contentDisplay="CENTER" style="-fx-alignment: CENTER;" text="Awaiting Action . . .">
                      <font>
-                        <Font name="Avenir Next Condensed Demi Bold Italic" size="18.0" />
+                        <Font name="Avenir Next Condensed Demi Bold Italic" size="22.0" />
                      </font>
                   </Label>
                </children></HBox>
             </bottom>
          <right>
-                <VBox prefHeight="540.0" prefWidth="202.0" spacing="5.0" styleClass="text_field_pane" BorderPane.alignment="CENTER">
+                <VBox alignment="CENTER" prefHeight="540.0" prefWidth="202.0" spacing="5.0" styleClass="text_field_pane" BorderPane.alignment="CENTER">
                     <children>
                         <TextField fx:id="first_name" promptText="First Name" styleClass="text_field">
                             <VBox.margin>
@@ -100,7 +100,7 @@
                         </TextField>
                   <ComboBox fx:id="major" prefHeight="26.0" prefWidth="181.0" promptText="Select Major">
                      <VBox.margin>
-                        <Insets left="10.0" />
+                        <Insets />
                      </VBox.margin>
                   </ComboBox>
                         <TextField fx:id="email" promptText="Email" styleClass="text_field">
@@ -157,5 +157,15 @@
             <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
          </padding>
         </BorderPane>
+      <MenuBar fx:id="csvFile" layoutX="824.0" layoutY="1.0" translateX="-0.5" translateY="-1.5">
+        <menus>
+          <Menu mnemonicParsing="false" text="CSV File">
+            <items>
+              <MenuItem fx:id="importCSV" mnemonicParsing="false" onAction="#handleImport" text="Import CSV" />
+                  <MenuItem fx:id="exportCSV" mnemonicParsing="false" onAction="#handleExport" text="Export CSV" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
     </children>
 </AnchorPane>

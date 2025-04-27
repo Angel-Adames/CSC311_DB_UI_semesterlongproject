@@ -21,15 +21,17 @@ import javafx.stage.Stage;
 import model.Person;
 import service.MyLogger;
 
-import java.io.File;
+import java.io.*;
 import java.net.URL;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class DB_GUI_Controller implements Initializable {
 
+    private static final String CSV_SEPARATOR = ",";
+    private static final String CSV_HEADER = "FirstName,LastName,Department,Major,Email,ImageURL";
+    private final DbConnectivityClass cnUtil = new DbConnectivityClass();
+    private final ObservableList<Person> data = cnUtil.getData();
     @FXML
     TextField first_name, last_name, department, email, imageURL;
     @FXML
@@ -53,16 +55,22 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     private MenuItem addItem;
     @FXML
+    private MenuItem importCSV;
+    @FXML
+    private MenuItem exportCSV;
+    @FXML
     private Label statusLb;
     @FXML
     private TableColumn<Person, Integer> tv_id;
     @FXML
     private TableColumn<Person, String> tv_fn, tv_ln, tv_department, tv_major, tv_email;
-    private final DbConnectivityClass cnUtil = new DbConnectivityClass();
-    private final ObservableList<Person> data = cnUtil.getData();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+
+        data.setAll(cnUtil.getData());
+        tv.setItems(data);
+
         try {
             tv_id.setCellValueFactory(new PropertyValueFactory<>("id"));
             tv_fn.setCellValueFactory(new PropertyValueFactory<>("firstName"));
@@ -102,6 +110,11 @@ public class DB_GUI_Controller implements Initializable {
                 if (deleteItem != null) {
                     deleteItem.setDisable(!isItemSelected);
                 }
+                if (newSelection != null) {
+                    populateForm(newSelection);
+                } else {
+                    clearForm();
+                }
             });
 
             major.setItems(FXCollections.observableArrayList(Major.values()));
@@ -113,6 +126,225 @@ public class DB_GUI_Controller implements Initializable {
             System.err.println("Error During Initializing: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    @FXML
+    private void handleImport(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open CSV File");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+
+        Stage stage = (Stage) menuBar.getScene().getWindow();
+        File selectedFile = fileChooser.showOpenDialog(menuBar.getScene().getWindow());
+
+        if (selectedFile != null) {
+            statusLb.setText("Importing From " + selectedFile.getName() + "...");
+            List<Person> importPersons = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+            int lineNum = 0;
+            boolean headerSkip = false;
+
+            try (BufferedReader br = new BufferedReader(new FileReader(selectedFile))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    lineNum++;
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+
+                    if (!headerSkip && line.startsWith("FirstName") || line.startsWith("ID")) {
+                        MyLogger.makeLog("Skipping Header Row: " + line);
+                        headerSkip = true;
+                        continue;
+                    }
+
+                    String[] fields = line.split(CSV_SEPARATOR, -1);
+
+                    if (fields.length != 6) {
+                        errors.add("Line " + lineNum + ": Invalid Number Fields (Expected 6, Found " + fields.length + ")");
+                        continue;
+                    }
+
+                    String firstName = fields[0].trim();
+                    String lastName = fields[1].trim();
+                    String department = fields[2].trim();
+                    String major = fields[3].trim();
+                    String email = fields[4].trim();
+                    String imageURL = fields[5].trim();
+
+                    if (firstName.isBlank() || lastName.isBlank() || department.isBlank() || major.isBlank() || email.isBlank() || imageURL.isBlank()) {
+                        errors.add("Line " + line + ": Missing Required Field(s)");
+                        continue;
+                    }
+                    if (!firstName.matches("^[a-zA-Z]+$") || !lastName.matches("^[a-zA-Z]+$") || !department.matches("^[a-zA-Z]+$")) {
+                        errors.add("Line " + line + ": Name or Department Fields Must Contain Only Letters");
+                        continue;
+                    }
+                    if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
+                        errors.add("Line " + line + ": Invalid Email Format For '" + email + "'");
+                        continue;
+                    }
+                    if (!imageURL.matches("^[^0-9]+$")) { // Your image URL validation
+                        errors.add("Line " + line + ": Invalid Image URL (Not Contain Numbers) For '" + imageURL + "'");
+                        continue;
+                    }
+
+                    Major selectedMajor = null;
+                    try {
+                        selectedMajor = Major.fromDisplayString(major);
+                        if (selectedMajor == null) {
+                            errors.add("Line " + line + ": Invalid Major '" + major + "'");
+                            continue;
+                        }
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Line " + line + ": Invalid Major '" + major + "'");
+                        continue;
+                    }
+
+                    Person p = new Person(firstName, lastName, department, selectedMajor.toString(), email, imageURL);
+                    importPersons.add(p);
+                }
+            } catch (IOException e) {
+                MyLogger.makeLog("Error Handling Import: " + e.getMessage());
+                showErrorAlert("File Read Error", "Could Not Read The CSV File: " + e.getMessage());
+                statusLb.setText("Error Handling Import");
+                return;
+            }
+
+            int successCount = 0;
+            int failCount = 0;
+            if (!importPersons.isEmpty()) {
+                statusLb.setText("Inserting " + importPersons.size() + " Valid Records Into Database . . .");
+                for (Person p : importPersons) {
+                    try {
+                        boolean inserted = cnUtil.insertUser(p);
+                        if (inserted) {
+                            int retrieveId = cnUtil.retrieveId(p);
+                            if (retrieveId > 0) {
+                                p.setId(retrieveId);
+                                Platform.runLater(() -> data.add(p));
+                                successCount++;
+                            } else {
+                                errors.add("Record Inserted For " + p.getEmail() + " But Failed To Retrieve ID");
+                                failCount++;
+                            }
+                        } else {
+                            errors.add("Failed To Insert Record For " + p.getEmail() + "(Database Error Or Duplicate Email");
+                            failCount++;
+                        }
+                    } catch (Exception e) {
+                        MyLogger.makeLog("Error Inserting Imported User " + p.getEmail() + ": " + e.getMessage());
+                        errors.add("Failed To Insert Record For " + p.getEmail() + ": " + e.getMessage());
+                        failCount++;
+                    }
+                }
+            }
+
+            String summary = "Import Finished " + successCount + " Records Added";
+            if (failCount > 0) {
+                summary += " (" + failCount + " Failed)";
+            }
+            if (!errors.isEmpty()) {
+                summary += " See Details Below Or In Log";
+                showImportErrors(errors);
+            }
+            statusLb.setText(summary);
+            MyLogger.makeLog(summary + (errors.isEmpty() ? "" : " Errors: " + String.join("; ", errors)));
+        } else {
+            statusLb.setText("CSV Import Cancelled");
+        }
+    }
+
+    @FXML
+    private void handleExport(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Data To CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        fileChooser.setInitialFileName("student_data_export.csv");
+        Stage stage = (Stage) menuBar.getScene().getWindow();
+        File selectedFile = fileChooser.showSaveDialog(stage);
+
+        if (selectedFile != null) {
+            statusLb.setText("Exporting Data To " + selectedFile.getName() + "...");
+            try (PrintWriter writer = new PrintWriter(new FileWriter(selectedFile))) {
+                writer.println("ID,FirstName,LastName,Department,Major,Email,ImageURL");
+
+                for (Person p : data) {
+                    writer.println(formatPersonAsCSV(p));
+                }
+
+                statusLb.setText("Data Successfully Exported To " + selectedFile.getName());
+                MyLogger.makeLog("Data Exported To " + selectedFile.getName());
+                showErrorAlert("Export Successful", "Data Exported To:\n" + selectedFile.getAbsolutePath());
+            } catch (IOException e) {
+                MyLogger.makeLog("Error Exporting Data: " + e.getMessage());
+                showErrorAlert("Export Error", "Could Not Export Data: " + e.getMessage());
+                statusLb.setText("Error Exporting File");
+            }
+        } else {
+            statusLb.setText("CSV Export Cancelled");
+        }
+    }
+
+    private String formatPersonAsCSV(Person p) {
+        return p.getId() + CSV_SEPARATOR +
+                p.getFirstName() + CSV_SEPARATOR +
+                p.getLastName() + CSV_SEPARATOR +
+                p.getDepartment() + CSV_SEPARATOR +
+                p.getMajor() + CSV_SEPARATOR +
+                p.getEmail() + CSV_SEPARATOR +
+                p.getImageURL();
+    }
+
+    private void showErrorAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    private void showImportErrors(List<String> errors) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Import Issues");
+        alert.setHeaderText("Some Records Could Not Be Imported - See Details");
+
+        TextArea textArea = new TextArea(String.join("\n", errors));
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+
+        alert.getDialogPane().setContent(textArea);
+        alert.getDialogPane().setPrefSize(480, 320);
+        alert.showAndWait();
+    }
+
+    private void populateForm(Person p) {
+        if (p != null) {
+            first_name.setText(p.getFirstName());
+            last_name.setText(p.getLastName());
+            department.setText(p.getDepartment());
+            try {
+                Major selectedMajor = Major.fromDisplayString(p.getMajor());
+                major.setValue(selectedMajor);
+            } catch (IllegalArgumentException e) {
+                MyLogger.makeLog("Error Populating Form: " + e.getMessage());
+                major.setValue(null);
+            }
+            email.setText(p.getEmail());
+            imageURL.setText(p.getImageURL());
+        }
+    }
+
+    @FXML
+    protected void selectedItemTV(MouseEvent mouseEvent) {
+        Person p = tv.getSelectionModel().getSelectedItem();
+        if (p != null) {
+            populateForm(p);
+        }
+
     }
 
     private void addTextFieldListeners() {
@@ -221,13 +453,13 @@ public class DB_GUI_Controller implements Initializable {
                 int retrieveId = cnUtil.retrieveId(p);
 
                 if (retrieveId > 0) {
-                p.setId(retrieveId);
+                    p.setId(retrieveId);
 
-                data.add(p);
+                    data.add(p);
 
-                clearForm();
-                System.out.println("Record Added Successfully For ID: " + retrieveId);
-                statusLb.setText("Record Added Successfully For ID: " + retrieveId);
+                    clearForm();
+                    System.out.println("Record Added Successfully For ID: " + retrieveId);
+                    statusLb.setText("Record Added Successfully For ID: " + retrieveId);
                 } else {
                     System.err.println("Record Might Be Inserted, But Failed To Retrieve ID For: " + p.getFirstName());
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Database Warning");
@@ -327,7 +559,7 @@ public class DB_GUI_Controller implements Initializable {
         }
 
         Person p2 = new Person(p.getId(), first_name.getText(), last_name.getText(), department.getText(),
-                maj.name(), email.getText(),  imageURL.getText());
+                maj.name(), email.getText(), imageURL.getText());
 
         boolean successful = cnUtil.editUser(p.getId(), p2);
 
@@ -389,19 +621,6 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     protected void addRecord() {
         showSomeone();
-    }
-
-    @FXML
-    protected void selectedItemTV(MouseEvent mouseEvent) {
-        Person p = tv.getSelectionModel().getSelectedItem();
-        if (p != null) {
-            first_name.setText(p.getFirstName());
-            last_name.setText(p.getLastName());
-            department.setText(p.getDepartment());
-            major.setValue(Major.valueOf(p.getMajor())); // Set the ComboBox to the current major
-            email.setText(p.getEmail());
-            imageURL.setText(p.getImageURL());
-        }
     }
 
     public void lightTheme(ActionEvent actionEvent) {
@@ -480,6 +699,15 @@ public class DB_GUI_Controller implements Initializable {
             this.display = display;
         }
 
+        public static Major fromDisplayString(String display) {
+            for (Major m : Major.values()) {
+                if (m.display.equalsIgnoreCase(display)) {
+                    return m;
+                }
+            }
+            throw new IllegalArgumentException("No constant with display text " + display + " found");
+        }
+
         public String getDisplay() {
             return display;
         }
@@ -491,7 +719,6 @@ public class DB_GUI_Controller implements Initializable {
     }
 
     private static class Results {
-
         String fname;
         String lname;
         Major major;
@@ -502,5 +729,4 @@ public class DB_GUI_Controller implements Initializable {
             this.major = venue;
         }
     }
-
 }
