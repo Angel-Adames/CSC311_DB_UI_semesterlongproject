@@ -4,6 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import model.Person;
 import service.MyLogger;
+import service.UserSession;
 
 import java.sql.*;
 
@@ -71,6 +72,14 @@ public class DbConnectivityClass {
                 statement.executeUpdate(sql);
                 MyLogger.makeLog("Table 'users' checked/created.");
 
+                String userAccountsTableSql = "CREATE TABLE IF NOT EXISTS user_accounts ("
+                        + "username VARCHAR(255) NOT NULL PRIMARY KEY,"
+                        + "password_hash VARCHAR(255) NOT NULL,"
+                        + "privileges VARCHAR(50) NOT NULL DEFAULT 'USER'"
+                        + ")";
+                statement.executeUpdate(userAccountsTableSql);
+                MyLogger.makeLog("Table 'user_accounts' checked/created.");
+
                 try (ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM users")) {
                     if (resultSet.next()) {
                         int numUsers = resultSet.getInt(1);
@@ -97,6 +106,46 @@ public class DbConnectivityClass {
         }
             return hasRegistredUsers;
         }
+
+    public UserSession validateLogin(String username, String plainPassword) {
+        String sql = "SELECT password_hash, privileges FROM user_accounts WHERE username = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String storedHash = rs.getString("password_hash");
+                    String privileges = rs.getString("privileges");
+
+                    // --- !! Use BCrypt (or your chosen library) to check the password !! ---
+                    // Example using BCrypt (add the dependency first!)
+                    // if (BCrypt.checkpw(plainPassword, storedHash)) {
+                    // For now, using plain text comparison (REPLACE THIS!)
+                    if (plainPassword.equals(storedHash)) { // !! REPLACE WITH HASH CHECK !!
+                        MyLogger.makeLog("Login successful for user: " + username);
+                        // Don't store the plain password in the session!
+                        // You might not even need the hash in the session, just username and privileges.
+                        return UserSession.getInstace(username, storedHash, privileges); // Or just username, privileges
+                    } else {
+                        MyLogger.makeLog("Login failed for user: " + username + " (Incorrect password)");
+                        return null; // Password mismatch
+                    }
+                } else {
+                    MyLogger.makeLog("Login failed: Username '" + username + "' not found.");
+                    return null; // Username not found
+                }
+            }
+        } catch (SQLException e) {
+            MyLogger.makeLog("SQL Error during login validation for '" + username + "': " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) { // Catch hashing library errors too if applicable
+            MyLogger.makeLog("Unexpected error during login validation for '" + username + "': " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public void queryUserByLastName(String name) {
 
@@ -190,7 +239,7 @@ public class DbConnectivityClass {
         }
     }
 
-    public boolean editUser(int id, Person p) { // Changed return type to boolean
+    public boolean editUser(int id, Person p) {
 
         String sql = "UPDATE users SET first_name=?, last_name=?, department=?, major=?, email=?, imageURL=? WHERE id=?";
 
@@ -203,7 +252,7 @@ public class DbConnectivityClass {
             preparedStatement.setString(4, p.getMajor());
             preparedStatement.setString(5, p.getEmail());
             preparedStatement.setString(6, p.getImageURL());
-            preparedStatement.setInt(7, id); // Use the passed ID
+            preparedStatement.setInt(7, id);
 
             int rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected > 0) {
@@ -220,15 +269,13 @@ public class DbConnectivityClass {
         }
     }
 
-    public boolean deleteRecord(Person person) { // Changed return type to boolean
+    public boolean deleteRecord(Person person) {
         if (person == null || person.getId() <= 0) { // Basic validation
             MyLogger.makeLog("Attempted to delete invalid person object or person with invalid ID.");
             return false;
         }
         int id = person.getId();
-        // connectToDatabase(); // Not needed here
         String sql = "DELETE FROM users WHERE id=?";
-        // Use try-with-resources
         try (Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
              PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
 
@@ -237,10 +284,10 @@ public class DbConnectivityClass {
 
             if (rowsAffected > 0) {
                 MyLogger.makeLog("User with ID " + id + " deleted successfully.");
-                return true; // Return true if delete affected rows
+                return true;
             } else {
                 MyLogger.makeLog("User with ID " + id + " not found for deletion.");
-                return false; // Return false if no rows were deleted
+                return false;
             }
 
         } catch (SQLException e) {
@@ -251,32 +298,82 @@ public class DbConnectivityClass {
     }
 
     public int retrieveId(Person p) {
-        // connectToDatabase(); // Not needed here
-        int id = -1; // Default to an invalid ID
+        int id = -1;
         if (p == null || p.getEmail() == null || p.getEmail().isEmpty()) {
             MyLogger.makeLog("Cannot retrieve ID for invalid person or empty email.");
             return id;
         }
         String sql = "SELECT id FROM users WHERE email=?";
-        // Use try-with-resources
         try (Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
              PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
 
             preparedStatement.setString(1, p.getEmail());
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                if (resultSet.next()) { // Check if a result was found
+                if (resultSet.next()) {
                     id = resultSet.getInt("id");
                     MyLogger.makeLog("Retrieved ID " + id + " for email " + p.getEmail());
                 } else {
                     MyLogger.makeLog("No user found with email " + p.getEmail() + " to retrieve ID.");
                 }
-            } // resultSet automatically closed
+            }
 
         } catch (SQLException e) {
             MyLogger.makeLog("Error retrieving ID for email " + p.getEmail() + ": " + e.getMessage());
             e.printStackTrace();
         }
         return id;
+    }
+
+    public boolean createUserAccount(String username, String hashedPassword) {
+        String checkSql = "SELECT COUNT(*) FROM user_accounts WHERE username = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD); // Use existing constants
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+            checkStmt.setString(1, username);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    MyLogger.makeLog("Attempt Creating Account Failed: Username '" + username + "' Already Exists");
+                    return false;
+                }
+            }
+
+        } catch (SQLException e) {
+            MyLogger.makeLog("SQL Error Checking Username Existence For '" + username + "'- " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            MyLogger.makeLog("Unexpected Error Checking Username Existence For '" + username + "'- " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        String insertSql = "INSERT INTO user_accounts (username, password_hash, privileges) VALUES (?, ?, ?)";
+        try (Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+             PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+
+            insertStmt.setString(1, username);
+            insertStmt.setString(2, hashedPassword);
+            insertStmt.setString(3, "USER");
+
+            int rowsAffected = insertStmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                MyLogger.makeLog("New User Account Created Successfully For: " + username);
+                return true;
+            } else {
+                MyLogger.makeLog("User Account Insertion Failed (0 Rows Affected) For: " + username);
+                return false;
+            }
+
+        } catch (SQLException e) {
+            MyLogger.makeLog("SQL Error Inserting New User '" + username + "'- " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            MyLogger.makeLog("Unexpected Error Inserting New User '" + username + "'- " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

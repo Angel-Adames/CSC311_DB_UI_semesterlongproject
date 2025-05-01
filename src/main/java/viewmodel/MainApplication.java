@@ -6,10 +6,14 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import service.MyLogger;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.Objects;
 
 public class MainApplication extends Application {
@@ -24,13 +28,58 @@ public class MainApplication extends Application {
 
     }
 
+    @Override
     public void start(Stage primaryStage) {
-        Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/DollarClouddatabase.png")));
-        this.primaryStage = primaryStage;
-        this.primaryStage.setResizable(false);
-        primaryStage.getIcons().add(icon);
-        primaryStage.setTitle("FSC CSC311 _ Database Project");
-        showScene1();
+        MyLogger.makeLog("Application Starting...");
+        DbConnectivityClass dbConnectivity = new DbConnectivityClass();
+        try {
+            MyLogger.makeLog("Attempting to connect to database and ensure tables exist...");
+            boolean dbReady = dbConnectivity.connectToDatabase(); // Call the method
+            // You might use the 'dbReady' boolean later if needed,
+            // but the main goal here is table creation.
+            MyLogger.makeLog("Database connection and table check complete.");
+
+            // --- Load the initial FXML (e.g., login screen) ---
+            // Ensure the path to your login FXML is correct
+            URL loginFxmlUrl = getClass().getResource("/view/login.fxml");
+            if (loginFxmlUrl == null) {
+                throw new IOException("Cannot find login.fxml resource");
+            }
+            Parent root = FXMLLoader.load(loginFxmlUrl);
+
+            Scene scene = new Scene(root, 900, 600);
+
+            URL cssUrl = getClass().getResource("/css/lightTheme.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            } else {
+                MyLogger.makeLog("Warning: Could not find default CSS stylesheet.");
+            }
+
+            primaryStage.setTitle("Login"); // Set the initial window title
+            primaryStage.setScene(scene);
+            primaryStage.show();
+            MyLogger.makeLog("Login screen displayed.");
+
+        }  catch (IOException e) {
+            MyLogger.makeLog("FATAL: Could not load the initial FXML scene: " + e.getMessage());
+            e.printStackTrace();
+            showFatalError("Application Error", "Could not load the main application interface.", e.getMessage());
+        } catch (Exception e) {
+            // Catch potential errors from connectToDatabase or other startup issues
+            MyLogger.makeLog("FATAL: An unexpected error occurred during application startup: " + e.getMessage());
+            e.printStackTrace();
+            showFatalError("Application Startup Error", "An unexpected error occurred during startup.", e.getMessage());
+        }
+    }
+
+    private void showFatalError(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText("The application cannot continue.\nDetails: " + content);
+        alert.showAndWait();
+        // Optionally call Platform.exit() here if the error is truly unrecoverable
     }
 
     private void showScene1() {
