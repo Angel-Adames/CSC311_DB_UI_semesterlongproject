@@ -39,7 +39,7 @@ public class DbConnectivityClass {
             }
         } catch (SQLException e) {
             MyLogger.makeLog("SQL Error retrieving data: " + e.getMessage()); // Log the error
-            e.printStackTrace(); // Keep for debugging
+            e.printStackTrace(); // Keep debugging
             // Consider showing an error dialog to the user from the calling code if data is critical
         } catch (Exception e) { // Catch other potential exceptions like ClassNotFoundException
             MyLogger.makeLog("Error retrieving data: " + e.getMessage());
@@ -96,7 +96,7 @@ public class DbConnectivityClass {
         } catch (ClassNotFoundException e) {
             MyLogger.makeLog("MySQL JDBC Driver not found: " + e.getMessage());
             e.printStackTrace();
-            // This is often a critical error, might want to prevent app from continuing
+            // This is often a critical error, might want to prevent the app from continuing
         } catch (SQLException e) {
             MyLogger.makeLog("Database connection or setup error: " + e.getMessage());
             e.printStackTrace();
