@@ -7,7 +7,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import service.MyLogger;
@@ -114,6 +113,4 @@ public class MainApplication extends Application {
             e.printStackTrace();
         }
     }
-
-
 }

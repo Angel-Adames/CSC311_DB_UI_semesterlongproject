@@ -102,5 +102,4 @@ public class Person {
                 ", email='" + email + '\'' +
                 '}';
     }
-
 }

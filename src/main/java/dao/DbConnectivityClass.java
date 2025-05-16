@@ -3,6 +3,7 @@ package dao;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import model.Person;
+import org.jetbrains.annotations.NotNull;
 import service.MyLogger;
 import service.UserSession;
 
@@ -11,8 +12,8 @@ import java.sql.*;
 public class DbConnectivityClass {
     final static String DB_NAME="CSC311_BD_TEMP";
         final static String SQL_SERVER_URL = "jdbc:mysql://csc311adamesjava65.mysql.database.azure.com/";//update this server name
-        final static String DB_URL = "jdbc:mysql://csc311adamesjava65.mysql.database.azure.com/" + DB_NAME;//update this database name
-        final static String USERNAME = "adamy";// update this username
+        public final static String DB_URL = "jdbc:mysql://csc311adamesjava65.mysql.database.azure.com/" + DB_NAME;//update this database name
+        public final static String USERNAME = "adamy";// update this username
         final static String PASSWORD = "tester123456!";// update this password
 
         private final ObservableList<Person> data = FXCollections.observableArrayList();
@@ -209,7 +210,7 @@ public class DbConnectivityClass {
         }
     }
 
-    public boolean insertUser(Person person) {
+    public boolean insertUser(@NotNull Person person) {
 
         String sql = "INSERT INTO users (first_name, last_name, department, major, email, imageURL) VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -239,7 +240,7 @@ public class DbConnectivityClass {
         }
     }
 
-    public boolean editUser(int id, Person p) {
+    public boolean editUser(int id, @NotNull Person p) {
 
         String sql = "UPDATE users SET first_name=?, last_name=?, department=?, major=?, email=?, imageURL=? WHERE id=?";
 
@@ -372,6 +373,38 @@ public class DbConnectivityClass {
             return false;
         } catch (Exception e) {
             MyLogger.makeLog("Unexpected Error Inserting New User '" + username + "'- " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteAllRecords() {
+        String sqlDeletePeople = "DELETE FROM users";
+        String sqlResetSequence = "DELETE FROM sqlite_sequence WHERE name='users'";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD); // Use your class constants
+             Statement stmt = conn.createStatement()) {
+
+            stmt.executeUpdate(sqlDeletePeople); // Use the correct SQL string
+            MyLogger.makeLog("All records successfully deleted from 'users' table.");
+
+            // Optional: Reset sequence for SQLite (adjust based on your actual database)
+            // if (conn.getMetaData().getDriverName().toLowerCase().contains("sqlite")) {
+            //     stmt.executeUpdate(sqlResetSequence);
+            //     MyLogger.makeLog("Auto-increment sequence for 'users' table reset (SQLite).");
+            // }
+            // For MySQL, auto-increment reset is handled differently (e.g., TRUNCATE or ALTER TABLE)
+            // If you are using MySQL, DELETE FROM does not reset AUTO_INCREMENT.
+            // You might need: stmt.executeUpdate("ALTER TABLE users AUTO_INCREMENT = 1;");
+            // Or consider TRUNCATE TABLE users; (but be aware of its implications)
+
+            return true;
+        } catch (SQLException e) {
+            MyLogger.makeLog("SQL Error deleting all records from 'users' table: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            MyLogger.makeLog("General Error deleting all records from 'users' table: " + e.getMessage());
             e.printStackTrace();
             return false;
         }

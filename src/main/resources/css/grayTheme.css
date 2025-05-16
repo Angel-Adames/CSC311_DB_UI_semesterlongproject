@@ -1,0 +1,137 @@
+.root {
+    -fx-base: #484848;
+    -fx-background: #3A3A3A;
+    -fx-control-inner-background: #2E2E2E;
+}
+
+.db_btn {
+    -fx-background-color: #a73;
+    -fx-cursor: hand;
+    -fx-font-family: "Arial";
+    -fx-font-size: 15px;
+    -fx-text-alignment: center;
+    -fx-text-fill: #000000;
+    -fx-alignment: CENTER;
+    -fx-background-radius: 10;
+    -fx-pref-width:200px;
+    -fx-pref-height: 50px;
+}
+
+.db_btn:hover {
+    -fx-background-color: #555555;
+}
+
+.db_btn:pressed {
+    -fx-background-color: #666666;
+}
+
+.button {
+    -fx-background-color: #454545;
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 3;
+}
+
+.button:hover {
+    -fx-background-color: #555555;
+}
+
+.button:pressed {
+    -fx-background-color: #666666;
+}
+
+.text-field {
+    -fx-background-color: #2A2A2A;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #555555;
+}
+
+.text-field:focused {
+    -fx-border-color: #666666;
+    -fx-background-color: #383838;
+}
+
+.combo-box {
+    -fx-background-color: #454545;
+    -fx-text-fill: #FFFFFF;
+}
+
+.combo-box:pressed {
+    -fx-background-color: #666666;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #454545;
+}
+
+.combo-box .list-cell:hover {
+    -fx-background-color: #555555;
+}
+
+.table-view {
+    -fx-background-color: #404040;
+    -fx-table-cell-border-color: #484848;
+}
+
+.table-view .column-header {
+    -fx-background-color: #555555;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #FFFFFF;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #505050;
+}
+
+.list-view {
+    -fx-background-color: #2A2A2A;
+}
+
+.list-cell {
+    -fx-text-fill: #EEEEEE;
+    -fx-background-color: #2A2A2A;
+}
+
+.list-cell:hover {
+    -fx-background-color: #454545;
+}
+
+.list-cell:selected {
+    -fx-background-color: #555555;
+}
+
+.label {
+    -fx-text-fill: #FFFFFF;
+}
+
+.dialog-pane {
+    -fx-background-color: #303030;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #404040;
+}
+
+.scroll-bar {
+    -fx-background-color: #2A2A2A;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #555555;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #666666;
+}
+
+.scroll-bar .increment-button:hover,
+.scroll-bar .decrement-button:hover {
+    -fx-background-color: #555555;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: #454545;
+}
